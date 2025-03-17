@@ -18,12 +18,16 @@ int main(int argc, char *argv[]) {
   std::string database = (argv[3]);
   DataBaseFactory::setDatabaseType(database);
   GlobalArgs::parse(argc, argv);
+
   std::cout << "Filename: " << filename << std::endl;
   CoreWorkload workload = Parser::parse(filename);
   workload.print();
-  std::cout << "========== Load Phase ==========" << threads << std::endl;
+
   std::random_device rd;
   Generator gen(workload, rd);
+
+  std::cout << "========== Load Phase ==========" << threads << std::endl;
+
   Executor executor(gen, threads);
   executor.loadPhase();
   std::cout << "========== Run Phase ==========" << threads << std::endl;
