@@ -19,6 +19,8 @@ class Parser {
                            std::vector<std::pair<u_int64_t, u_int64_t>> &bins);
   static bool tryMatchOperations(const std::string &line, std::smatch &match,
                                  int &operations);
+  static bool tryMatchNumRecords(const std::string &line, std::smatch &match,
+                                 int &num_records);
 
 public:
   static CoreWorkload parse(const std::string &);

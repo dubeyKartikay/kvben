@@ -76,6 +76,19 @@ bool Parser::tryMatchBins(const std::string &line, std::smatch &match,
   return true;
 }
 
+bool Parser::tryMatchNumRecords(const std::string &line, std::smatch &match,
+                                int &num_records) {
+  if (match.size() != 3) {
+    throw std::runtime_error("Invalid num_records format : " + line +
+                             "should be numRecords=1000000");
+  }
+  std::ssub_match sub_match = match[1];
+  if (sub_match.str() != "numRecords") {
+    return false;
+  }
+  num_records = std::stoi(match[2]);
+  return true;
+}
 bool Parser::tryMatchOperations(const std::string &line, std::smatch &match,
                                 int &operations) {
   if (match.size() != 3) {
@@ -104,10 +117,12 @@ CoreWorkload Parser::parse(const std::string &filename) {
   std::vector<std::pair<u_int64_t, u_int64_t>> bins;
   std::vector<std::pair<u_int64_t, u_int64_t>> fieldBins;
   int operations;
+  int num_records;
   while (std::getline(file, line)) {
     std::smatch match;
     if (std::regex_match(line, match, kv_regezx)) {
-      if (!tryMatchOperations(line, match, operations)) {
+      if (!tryMatchOperations(line, match, operations) &&
+          !tryMatchNumRecords(line, match, num_records)) {
         throw std::runtime_error("Invalid line : " + line);
       }
     } else if (std::regex_match(line, match, IntArray2D_regex)) {
@@ -127,7 +142,8 @@ CoreWorkload Parser::parse(const std::string &filename) {
       throw std::runtime_error("Invalid line : " + line);
     }
   }
-  CoreWorkload workload(bins, weights, fieldBins, fieldWeights, operations);
+  CoreWorkload workload(bins, weights, fieldBins, fieldWeights, operations,
+                        num_records);
   return workload;
 }
 void Parser::parse2DintArray(

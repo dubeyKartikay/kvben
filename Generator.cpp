@@ -1,10 +1,14 @@
 #include <Generator.hpp>
 #include <algorithm>
+#include <cstdint>
 #include <cstdlib>
+#include <iostream>
+#include <random>
 #include <string>
 #include <sys/types.h>
 
-Generator::Generator(const CoreWorkload &workload) : workload(workload) {
+Generator::Generator(const CoreWorkload &workload, std::random_device &rd)
+    : workload(workload) {
   weightsCdf.push_back(this->workload.getWeights()[0]);
   srand(time(NULL));
   for (int i = 1; i < this->workload.getWeights().size(); i++) {
@@ -15,21 +19,26 @@ Generator::Generator(const CoreWorkload &workload) : workload(workload) {
     fieldWeightsCdf.push_back(fieldWeightsCdf[i - 1] +
                               this->workload.getFieldWeights()[i]);
   }
+  gen = std::mt19937(rd());
+  dist = std::uniform_real_distribution<double>(0, 1);
 }
 
 u_int64_t Generator::nextFieldCount() {
-  double r = (double)rand() / RAND_MAX;
+  double r = dist(gen);
   auto it = std::lower_bound(fieldWeightsCdf.begin(), fieldWeightsCdf.end(), r);
   std::pair<u_int64_t, u_int64_t> bin =
       this->workload.getFields()[it - fieldWeightsCdf.begin()];
-  return bin.first + rand() % (bin.second - bin.first + 1);
+  double r2 = dist(gen);
+  return bin.first + r2 * (bin.second - bin.first + 1);
 }
 u_int64_t Generator::nextPacketSize() {
-  double r = (double)rand() / RAND_MAX;
+  double r = dist(gen);
   auto it = std::lower_bound(weightsCdf.begin(), weightsCdf.end(), r);
   std::pair<u_int64_t, u_int64_t> bin =
       this->workload.getBins()[it - weightsCdf.begin()];
-  return bin.first + rand() % (bin.second - bin.first + 1);
+  double r2 = dist(gen);
+  int64_t res = (int64_t)bin.first + r2 * (double)(bin.second - bin.first + 1);
+  return res;
 }
 
 std::string Generator::generateString(u_int64_t length) {

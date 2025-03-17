@@ -1,19 +1,22 @@
+#include "IDataBaseBinding.hpp"
 #include <MuserBinding.hpp>
 #include <arpa/inet.h>
 #include <cstdint>
 #include <cstring>
 #include <endian.h>
 #include <fcntl.h>
+#include <gArgs.hpp>
 #include <iostream>
+#include <memory>
 #include <netinet/in.h>
 #include <string>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <vector>
-
-MustoreBinding::MustoreBinding(const std::string &ip, int port)
-    : ip(ip), port(port) {
+void MustoreBinding::init() {
+  std::string ip = GlobalArgs::get("ip");
+  int port = std::stoi(GlobalArgs::get("port"));
   std::cout << "Connecting to Mustore at " << ip << ":" << port << std::endl;
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);
   if (sockfd < 0) {
@@ -42,12 +45,12 @@ MustoreBinding::MustoreBinding(const std::string &ip, int port)
   std::cout << "Connected to Mustore at " << ip << ":" << port << std::endl;
   this->server_fd = sockfd;
 }
+void MustoreBinding::cleanup() { close(this->server_fd); }
 
-MustoreBinding::~MustoreBinding() { close(this->server_fd); }
-
-int64_t MustoreBinding::set(const std::string &key,
-                            const std::vector<std::string> &fieldnames,
-                            const std::vector<std::string> &fieldvalues) {
+std::unique_ptr<Response>
+MustoreBinding::set(const std::string &key,
+                    const std::vector<std::string> &fieldnames,
+                    const std::vector<std::string> &fieldvalues) {
   std::string message = "SET_FIELDS " + key + " ";
   for (int i = 0; i < fieldnames.size(); i++) {
     message += fieldnames[i] + "=\"" + fieldvalues[i] + "\" ";
@@ -58,43 +61,47 @@ int64_t MustoreBinding::set(const std::string &key,
   char *buffer = (char *)malloc(len + sizeof(u_int64_t));
   std::memcpy(buffer, &len_network_order, sizeof(u_int64_t));
   std::memcpy(buffer + sizeof(u_int64_t), message.c_str(), len);
-  std::lock_guard<std::mutex> lock(this->mutex);
-  int64_t sentBytes = ::send(this->server_fd, buffer, len + sizeof(len), 0);
+  int64_t sentBytes = 0;
+  sentBytes = ::send(this->server_fd, buffer, len + sizeof(len), 0);
   std::free(buffer);
-  // std::cout << "Sent " << sentBytes << " bytes" << std::endl;
-  return sentBytes;
+  return recieve();
 }
 
-int64_t MustoreBinding::get(const std::string &key) {
+std::unique_ptr<Response> MustoreBinding::get(const std::string &key) {
   std::string message = "GETALL " + key + "\n";
   u_int64_t len = message.size();
   u_int64_t len_network_order = htobe64(len);
   char *buffer = (char *)malloc(len + sizeof(u_int64_t));
   std::memcpy(buffer, &len_network_order, sizeof(u_int64_t));
   std::memcpy(buffer + sizeof(u_int64_t), message.c_str(), len);
-  std::lock_guard<std::mutex> lock(this->mutex);
-  int64_t sentBytes = ::send(this->server_fd, buffer, len + sizeof(len), 0);
+  int64_t sentBytes = 0;
+  sentBytes = ::send(this->server_fd, buffer, len + sizeof(len), 0);
   std::free(buffer);
   // std::cout << "Sent " << sentBytes << " bytes" << std::endl;
-  return sentBytes;
+  auto respose = recieve();
+  return respose;
 }
 
-std::string MustoreBinding::recieve() {
-  std::string result;
-  char buffer[1024];
+std::unique_ptr<Response> MustoreBinding::recieve() {
+  std::unique_ptr<Response> resp = std::make_unique<Response>();
+  resp->payload.reserve(1024 * 0.5);
+  std::byte buffer[1024];
   while (true) {
-    int valread = recv(this->server_fd, buffer, sizeof(buffer), 0);
+    int64_t valread = 0;
+
+    valread = recv(this->server_fd, buffer, sizeof(buffer), 0);
     if (valread < 0) {
-      perror("recv failed");
-      return "";
+      resp->status = -1;
+      return resp;
     }
     if (valread == 0) {
       break;
     }
-    result.append(buffer, valread);
-    if (result.find('\n') != std::string::npos || valread < sizeof(buffer)) {
+    resp->payload.insert(resp->payload.end(), buffer, buffer + valread);
+    if (valread < sizeof(buffer)) {
       break;
     }
   }
-  return result;
+  resp->status = 0;
+  return resp;
 }
