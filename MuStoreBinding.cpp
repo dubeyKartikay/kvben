@@ -47,13 +47,12 @@ void MustoreBinding::init() {
 }
 void MustoreBinding::cleanup() { close(this->server_fd); }
 
-std::unique_ptr<Response>
-MustoreBinding::set(const std::string &key,
-                    const std::vector<std::string> &fieldnames,
-                    const std::vector<std::string> &fieldvalues) {
+std::unique_ptr<Response> MustoreBinding::set(
+    const std::string &key, const std::vector<std::string> &fieldnames,
+    const std::shared_ptr<std::vector<std::string>> &fieldvalues) {
   std::string message = "SET_FIELDS " + key + " ";
   for (int i = 0; i < fieldnames.size(); i++) {
-    message += fieldnames[i] + "=\"" + fieldvalues[i] + "\" ";
+    message += fieldnames[i] + "=\"" + fieldvalues->at(i) + "\" ";
   }
   message += "\n";
   u_int64_t len = message.size();

@@ -18,6 +18,6 @@ public:
   void init() override;
   std::unique_ptr<Response>
   set(const std::string &key, const std::vector<std::string> &fieldnames,
-      const std::vector<std::string> &fieldvalues) override;
+      const std::shared_ptr<std::vector<std::string>> &fieldvalues) override;
   std::unique_ptr<Response> get(const std::string &key) override;
 };

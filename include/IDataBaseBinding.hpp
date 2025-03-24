@@ -20,6 +20,6 @@ public:
   }
   virtual std::unique_ptr<Response>
   set(const std::string &key, const std::vector<std::string> &fieldnames,
-      const std::vector<std::string> &fieldvalues) = 0;
+      const std::shared_ptr<std::vector<std::string>> &fieldvalues) = 0;
   virtual std::unique_ptr<Response> get(const std::string &key) = 0;
 };

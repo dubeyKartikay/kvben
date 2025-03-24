@@ -20,7 +20,9 @@ public:
       : bins(bins.begin(), bins.end()), weights(weights.begin(), weights.end()),
         operations(operations), fields(fields.begin(), fields.end()),
         field_weights(field_weights.begin(), field_weights.end()),
-        num_records(num_records) {}
+        num_records(num_records) {
+    print();
+  }
   const std::vector<std::pair<u_int64_t, u_int64_t>> &getBins() { return bins; }
   const std::vector<double> &getWeights() { return weights; }
   int getOperations() { return operations; }

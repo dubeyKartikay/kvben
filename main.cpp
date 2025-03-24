@@ -18,19 +18,16 @@ int main(int argc, char *argv[]) {
   std::string database = (argv[3]);
   DataBaseFactory::setDatabaseType(database);
   GlobalArgs::parse(argc, argv);
-
-  std::cout << "Filename: " << filename << std::endl;
-  CoreWorkload workload = Parser::parse(filename);
-  workload.print();
-
   std::random_device rd;
-  Generator gen(workload, rd);
-
+  CoreWorkloadData coreWorkloadData(filename, rd);
+  std::cout << "Initing Workload" << std::endl;
+  coreWorkloadData.init(threads);
   std::cout << "========== Load Phase ==========" << threads << std::endl;
-
-  Executor executor(gen, threads);
+  Executor executor(std::make_unique<CoreWorkloadData>(coreWorkloadData),
+                    threads);
   executor.loadPhase();
   std::cout << "========== Run Phase ==========" << threads << std::endl;
   executor.runPhase();
+  std::cout << "========== Done ==========" << threads << std::endl;
   return 0;
 }

@@ -19,4 +19,5 @@ public:
   u_int64_t nextFieldCount();
   u_int64_t getOperations() { return workload.getOperations(); }
   u_int64_t getNumRecords() { return workload.getNumRecords(); }
+  double getRandom();
 };

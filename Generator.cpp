@@ -22,6 +22,7 @@ Generator::Generator(const CoreWorkload &workload, std::random_device &rd)
   gen = std::mt19937(rd());
   dist = std::uniform_real_distribution<double>(0, 1);
 }
+double Generator::getRandom() { return dist(gen); }
 
 u_int64_t Generator::nextFieldCount() {
   double r = dist(gen);

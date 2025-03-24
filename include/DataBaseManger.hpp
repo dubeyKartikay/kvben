@@ -21,10 +21,10 @@ public:
       connection->cleanup();
     }
   }
-  std::unique_ptr<Response> set(const std::string &key,
-                                const std::vector<std::string> &fieldnames,
-                                const std::vector<std::string> &fieldvalues,
-                                int64_t index) {
+  std::unique_ptr<Response>
+  set(const std::string &key, const std::vector<std::string> &fieldnames,
+      const std::shared_ptr<std::vector<std::string>> &fieldvalues,
+      int64_t index) {
     return connections[index]->set(key, fieldnames, fieldvalues);
   }
   std::unique_ptr<Response> get(const std::string &key, int64_t index) {
