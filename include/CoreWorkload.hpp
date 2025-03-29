@@ -1,6 +1,11 @@
 #pragma once
+#include <cstddef>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
+#include <string>
 #include <sys/types.h>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 class CoreWorkload {
@@ -31,6 +36,28 @@ public:
     return fields;
   }
   const std::vector<double> &getFieldWeights() { return field_weights; }
+  std::string generateFixedSizeHash() const {
+    std::ostringstream oss;
+    for (const auto &bin : bins) {
+      oss << bin.first << bin.second;
+    }
+    for (const auto &weight : weights) {
+      oss << weight;
+    }
+    for (const auto &field : fields) {
+      oss << field.first << field.second;
+    }
+    for (const auto &field_weight : field_weights) {
+      oss << field_weight;
+    }
+    oss << operations << num_records;
+
+    std::string data = oss.str();
+    std::hash<std::string> hasher;
+    size_t hash = hasher(data);
+    return std::to_string(hash);
+  }
+
   void print() {
     std::cout << "CoreWorkLoad: " << std::endl;
     std::cout << "Bins: " << std::endl;

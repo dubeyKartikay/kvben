@@ -22,6 +22,7 @@ int main(int argc, char *argv[]) {
   CoreWorkloadData coreWorkloadData(filename, rd);
   std::cout << "Initing Workload" << std::endl;
   coreWorkloadData.init(threads);
+  // coreWorkloadData.printWorkload();
   std::cout << "========== Load Phase ==========" << threads << std::endl;
   Executor executor(std::make_unique<CoreWorkloadData>(coreWorkloadData),
                     threads);
