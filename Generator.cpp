@@ -9,12 +9,17 @@
 
 Generator::Generator(const CoreWorkload &workload, std::random_device &rd)
     : workload(workload) {
-  weightsCdf.push_back(this->workload.getWeights()[0]);
+  if (this->workload.getWeights().size() > 0) {
+    weightsCdf.push_back(this->workload.getWeights()[0]);
+  }
   srand(time(NULL));
   for (int i = 1; i < this->workload.getWeights().size(); i++) {
     weightsCdf.push_back(weightsCdf[i - 1] + this->workload.getWeights()[i]);
   }
-  fieldWeightsCdf.push_back(this->workload.getFieldWeights()[0]);
+
+  if (this->workload.getFieldWeights().size() > 0) {
+    fieldWeightsCdf.push_back(this->workload.getFieldWeights()[0]);
+  }
   for (int i = 1; i < this->workload.getFieldWeights().size(); i++) {
     fieldWeightsCdf.push_back(fieldWeightsCdf[i - 1] +
                               this->workload.getFieldWeights()[i]);
@@ -23,6 +28,12 @@ Generator::Generator(const CoreWorkload &workload, std::random_device &rd)
   dist = std::uniform_real_distribution<double>(0, 1);
 }
 double Generator::getRandom() { return dist(gen); }
+
+u_int64_t Generator::getNextfetchKey() {
+  u_int64_t random_index = std::uniform_int_distribution<u_int64_t>(
+      0, this->workload.getNumRecords() - 1)(gen);
+  return random_index;
+}
 
 u_int64_t Generator::nextFieldCount() {
   double r = dist(gen);

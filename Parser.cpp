@@ -1,4 +1,5 @@
 #include "Parser.hpp"
+#include "CoreWorkload.hpp"
 #include <fstream>
 #include <regex>
 #include <stdexcept>
@@ -109,6 +110,7 @@ CoreWorkload Parser::parse(const std::string &filename) {
     throw std::runtime_error("Could not open file: " + filename);
   }
   std::string line;
+  std::regex kv_regexPath(R"(^([a-zA-Z]+)\s*[:=]\s*(.*?)\s*$)");
   std::regex kv_regezx("([a-zA-Z]+)=([0-9]+)");
   std::regex IntArray2D_regex("([a-zA-Z]+)=(\\[(?:\\[(\\d+),(\\d+)\\],?)+\\])");
   std::regex DoubleArray_regex("([a-zA-Z]+)=(\\[((1|0|0.[0-9]+),?)+\\])");
@@ -116,6 +118,7 @@ CoreWorkload Parser::parse(const std::string &filename) {
   std::vector<double> fieldWeights;
   std::vector<std::pair<u_int64_t, u_int64_t>> bins;
   std::vector<std::pair<u_int64_t, u_int64_t>> fieldBins;
+  std::string workloadPath;
   int operations;
   int num_records;
   while (std::getline(file, line)) {
@@ -135,6 +138,18 @@ CoreWorkload Parser::parse(const std::string &filename) {
           !tryMatchFieldWeights(line, match, fieldWeights)) {
         throw std::runtime_error("Invalid line : " + line);
       }
+    } else if (std::regex_match(line, match, kv_regexPath)) {
+      if (match[1] != "workloadPath") {
+        throw std::runtime_error("Invalid line : " + line);
+      }
+      workloadPath = match[2];
+      if (workloadPath.empty()) {
+        throw std::runtime_error("Invalid workload path : " + workloadPath);
+      }
+      std::filesystem::path path(workloadPath);
+      if (!std::filesystem::exists(path)) {
+        throw std::runtime_error("File does not exist: " + workloadPath);
+      }
     } else {
       if (line.empty()) {
         continue;
@@ -142,8 +157,12 @@ CoreWorkload Parser::parse(const std::string &filename) {
       throw std::runtime_error("Invalid line : " + line);
     }
   }
-  CoreWorkload workload(bins, weights, fieldBins, fieldWeights, operations,
-                        num_records);
+  if (workloadPath.empty()) {
+    CoreWorkload workload(bins, weights, fieldBins, fieldWeights, operations,
+                          num_records);
+    return workload;
+  }
+  CoreWorkload workload(workloadPath);
   return workload;
 }
 void Parser::parse2DintArray(

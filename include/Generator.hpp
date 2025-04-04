@@ -13,11 +13,12 @@ class Generator {
 
 public:
   Generator(const CoreWorkload &workload, std::random_device &rd);
-  u_int64_t nextPacketSize();
-  std::string nextKey(u_int64_t keyNum);
-  std::string nextValue(u_int64_t length);
-  u_int64_t nextFieldCount();
-  u_int64_t getOperations() { return workload.getOperations(); }
-  u_int64_t getNumRecords() { return workload.getNumRecords(); }
+  virtual u_int64_t nextPacketSize();
+  virtual std::string nextKey(u_int64_t keyNum);
+  virtual std::string nextValue(u_int64_t length);
+  virtual u_int64_t nextFieldCount();
+  virtual u_int64_t getNextfetchKey();
+  virtual u_int64_t getOperations() { return workload.getOperations(); }
+  virtual u_int64_t getNumRecords() { return workload.getNumRecords(); }
   double getRandom();
 };

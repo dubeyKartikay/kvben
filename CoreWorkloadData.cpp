@@ -1,3 +1,5 @@
+#include "Generator.hpp"
+#include "WorkloadReader.hpp"
 #include <CoreWorkloadData.hpp>
 #include <fstream>
 #include <iostream>
@@ -8,8 +10,10 @@
 #include <vector>
 CoreWorkloadData::CoreWorkloadData(std::filesystem::path workloadPath,
                                    std::random_device &rd)
-    : coreWorkload(Parser::parse(workloadPath)), generator(coreWorkload, rd),
-      workloadPath(workloadPath) {}
+    : coreWorkload(Parser::parse(workloadPath)), workloadPath(workloadPath),
+      generator(coreWorkload.getFileName() != ""
+                    ? std::make_unique<WorkloadReader>(coreWorkload, rd)
+                    : std::make_unique<Generator>(coreWorkload, rd)) {}
 
 bool CoreWorkloadData::loadDataFromFile(const std::filesystem::path &filePath) {
   std::ifstream inFile(filePath, std::ios::binary);
@@ -104,8 +108,6 @@ CoreWorkloadData::getFieldValues(u_int64_t index) {
 }
 
 void CoreWorkloadData::init(uint64_t threadCount) {
-  std::cout << "Generating Data" << std::endl;
-
   std::filesystem::path dataFilePath =
       coreWorkload.generateFixedSizeHash() + ".data";
 
@@ -115,7 +117,8 @@ void CoreWorkloadData::init(uint64_t threadCount) {
   }
 
   std::cout << "Generating Data" << std::endl;
-  u_int64_t recordCount = coreWorkload.getNumRecords();
+  u_int64_t recordCount = generator->getNumRecords();
+  std::cout << "Record Count: " << recordCount << std::endl;
   keys = std::vector<std::string>(recordCount);
   fieldValues = std::vector<std::shared_ptr<std::vector<std::string>>>(
       recordCount, nullptr);
@@ -123,16 +126,18 @@ void CoreWorkloadData::init(uint64_t threadCount) {
 
   auto initTask = [this](uint64_t start, uint64_t end) {
     for (uint64_t i = start; i < end; ++i) {
+      std::cout << "Generating record " << i << std::endl;
       std::shared_ptr<std::vector<std::string>> fieldValues =
           std::make_shared<std::vector<std::string>>();
 
-      std::string key = generator.nextKey(i);
+      std::string key = generator->nextKey(i);
       keys[i] = key;
-      u_int64_t fields = generator.nextFieldCount();
-      u_int64_t packetSize = generator.nextPacketSize();
+      u_int64_t fields = generator->nextFieldCount();
+      std::cout << "Fields: " << fields << std::endl;
+      u_int64_t packetSize = generator->nextPacketSize();
       u_int64_t fieldSize = packetSize / fields;
       for (u_int64_t j = 0; j < fields; ++j) {
-        fieldValues->push_back(generator.nextValue(fieldSize));
+        fieldValues->push_back(generator->nextValue(fieldSize));
       }
       this->fieldValues[i] = fieldValues;
     }
@@ -153,11 +158,8 @@ void CoreWorkloadData::init(uint64_t threadCount) {
     }
   }
   for (int i = 0; i < getOperations(); i++) {
-    u_int64_t random_index = generator.getRandom() * keys.size();
-    if (random_index == keys.size()) {
-      random_index--;
-    }
-    fetchKeys.push_back(random_index);
+    u_int64_t fetch_index = generator->getNextfetchKey();
+    fetchKeys.push_back(fetch_index);
   }
   std::cout << "Saving data to file" << std::endl;
   saveDataToFile(coreWorkload.generateFixedSizeHash() + ".data");

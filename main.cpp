@@ -19,13 +19,13 @@ int main(int argc, char *argv[]) {
   DataBaseFactory::setDatabaseType(database);
   GlobalArgs::parse(argc, argv);
   std::random_device rd;
-  CoreWorkloadData coreWorkloadData(filename, rd);
+  std::unique_ptr<CoreWorkloadData> coreWorkloadData =
+      std::make_unique<CoreWorkloadData>(filename, rd);
   std::cout << "Initing Workload" << std::endl;
-  coreWorkloadData.init(threads);
-  // coreWorkloadData.printWorkload();
+  coreWorkloadData->init(threads);
+  // coreWorkloadData->printWorkload();
   std::cout << "========== Load Phase ==========" << threads << std::endl;
-  Executor executor(std::make_unique<CoreWorkloadData>(coreWorkloadData),
-                    threads);
+  Executor executor(std::move(coreWorkloadData), threads);
   executor.loadPhase();
   std::cout << "========== Run Phase ==========" << threads << std::endl;
   executor.runPhase();

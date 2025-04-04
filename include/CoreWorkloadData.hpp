@@ -12,7 +12,7 @@
 
 class CoreWorkloadData {
   CoreWorkload coreWorkload;
-  Generator generator;
+  std::unique_ptr<Generator> generator;
   std::vector<std::string> keys;
   std::vector<u_int64_t> fetchKeys;
   std::filesystem::path workloadPath;
@@ -25,8 +25,8 @@ public:
   void init(u_int64_t threadCount);
   const std::string &getKey(u_int64_t index);
   std::shared_ptr<std::vector<std::string>> getFieldValues(u_int64_t index);
-  u_int64_t getNumRecords() { return coreWorkload.getNumRecords(); }
-  u_int64_t getOperations() { return coreWorkload.getOperations(); }
+  u_int64_t getNumRecords() { return generator->getNumRecords(); }
+  u_int64_t getOperations() { return generator->getOperations(); }
   const std::string &getFetchKey(u_int64_t index) {
     return keys.at(fetchKeys.at(index));
   }
